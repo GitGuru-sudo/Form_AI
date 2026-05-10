@@ -1,5 +1,9 @@
 # FormAI
 
+**Hugging Face model repo: [saksham0510/formai-tinyllama](https://huggingface.co/saksham0510/formai-tinyllama)**
+
+**FormAI was built to reduce the complexity of creating forms in tools like Google Forms and Microsoft Forms. Instead of building everything manually, you can describe the form in a prompt, generate the structure, and then edit the rest easily.**
+
 FormAI is an AI-powered form builder that turns natural-language prompts into editable, publishable forms. Describe the form you need, let the LLM draft the structure, fine-tune the fields, publish a public link, and review responses from your dashboard.
 
 ## What It Does
