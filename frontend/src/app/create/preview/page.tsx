@@ -76,9 +76,16 @@ export default function PreviewPage() {
       })
       localStorage.removeItem("generatedForm")
       router.push(`/dashboard?published=${res.data.shareToken}`)
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      alert("Failed to publish form")
+      const status = err.response?.status
+      if (status === 401) {
+        alert("Session expired. Please sign in and try again.")
+      } else if (status === 400) {
+        alert(err.response?.data?.message || "Invalid form data. Please check title and questions.")
+      } else {
+        alert("Failed to publish form. Please try again.")
+      }
     } finally {
       setIsSaving(false)
     }

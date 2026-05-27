@@ -4,22 +4,51 @@ import ResponseModel from '../models/response.model';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../lib/logger';
 
+const PROTECTED_FIELDS = ['_id', 'clerkUserId', 'shareToken', 'isActive', 'createdAt', 'updatedAt'];
+
+function stripProtectedFields(body: any): any {
+  const cleaned = { ...body };
+  for (const field of PROTECTED_FIELDS) {
+    delete cleaned[field];
+  }
+  return cleaned;
+}
+
 export const createForm = async (req: Request, res: Response) => {
   try {
-    const { title, description, questions, collectFullName, collectEmail, collectPhone, collectAge, collectDateOfBirth, collectGender } = req.body;
-    const clerkUserId = (req as any).auth?.userId;
+    const clerkUserId = req.clerkUserId;
 
     if (!clerkUserId) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { title, description, questions, collectFullName, collectEmail, collectPhone, collectAge, collectDateOfBirth, collectGender } = req.body;
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ message: 'Title is required' });
+    }
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ message: 'At least one question is required' });
+    }
+
+    for (const q of questions) {
+      if (!q.questionText || typeof q.questionText !== 'string' || q.questionText.trim().length === 0) {
+        return res.status(400).json({ message: `Question at index ${questions.indexOf(q)} has empty text` });
+      }
     }
 
     const shareToken = uuidv4().substring(0, 8);
 
     const newForm = new Form({
       clerkUserId,
-      title,
+      title: title.trim(),
       description,
-      questions,
+      questions: questions.map((q: any, i: number) => ({
+        ...q,
+        questionText: q.questionText.trim(),
+        orderIndex: i
+      })),
       shareToken,
       collectFullName,
       collectEmail,
@@ -40,22 +69,22 @@ export const createForm = async (req: Request, res: Response) => {
 
 export const getForms = async (req: Request, res: Response) => {
   try {
-    const clerkUserId = (req as any).auth?.userId;
+    const clerkUserId = req.clerkUserId;
     const forms = await Form.find({ clerkUserId }).sort({ createdAt: -1 });
-    
+
     const formIds = forms.map(f => f._id);
     const responseCounts = await ResponseModel.aggregate([
       { $match: { formId: { $in: formIds } } },
       { $group: { _id: '$formId', count: { $sum: 1 } } }
     ]);
-    
+
     const countMap = new Map(responseCounts.map(r => [r._id.toString(), r.count]));
-    
+
     const formsWithCounts = forms.map(form => ({
       ...form.toObject(),
       responseCount: countMap.get(form._id.toString()) || 0
     }));
-    
+
     res.json(formsWithCounts);
   } catch (err: any) {
     logger.error('Failed to get forms', { error: err.message });
@@ -66,7 +95,7 @@ export const getForms = async (req: Request, res: Response) => {
 export const getFormById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const clerkUserId = (req as any).auth?.userId;
+    const clerkUserId = req.clerkUserId;
     const form = await Form.findOne({ _id: id, clerkUserId });
 
     if (!form) {
@@ -82,11 +111,13 @@ export const getFormById = async (req: Request, res: Response) => {
 export const updateForm = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const clerkUserId = (req as any).auth?.userId;
-    
+    const clerkUserId = req.clerkUserId;
+
+    const updates = stripProtectedFields(req.body);
+
     const updatedForm = await Form.findOneAndUpdate(
       { _id: id, clerkUserId },
-      { $set: req.body },
+      { $set: updates },
       { new: true }
     );
 
@@ -103,7 +134,7 @@ export const updateForm = async (req: Request, res: Response) => {
 export const toggleFormStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const clerkUserId = (req as any).auth?.userId;
+    const clerkUserId = req.clerkUserId;
 
     const form = await Form.findOne({ _id: id, clerkUserId });
     if (!form) {
@@ -122,7 +153,7 @@ export const toggleFormStatus = async (req: Request, res: Response) => {
 export const deleteForm = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const clerkUserId = (req as any).auth?.userId;
+    const clerkUserId = req.clerkUserId;
 
     const deletedForm = await Form.findOneAndDelete({ _id: id, clerkUserId });
     if (!deletedForm) {

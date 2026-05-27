@@ -5,23 +5,38 @@ import { useState, useEffect } from "react"
 import { Form, FormResponse } from "@/types"
 import api from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Download, ArrowLeft } from "lucide-react"
+import { Download, ArrowLeft, Edit3 } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
-import { format } from "date-fns"
 
 function ResponsesSkeleton() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between">
         <Skeleton className="h-10 w-64 bg-slate-800" />
-        <Skeleton className="h-10 w-32 bg-slate-800" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24 bg-slate-800" />
+          <Skeleton className="h-10 w-40 bg-slate-800" />
+        </div>
       </div>
-      <Skeleton className="h-96 w-full bg-slate-800 rounded-xl" />
+      {[1, 2, 3].map(i => (
+        <Skeleton key={i} className="h-40 w-full bg-slate-800 rounded-xl" />
+      ))}
     </div>
   )
+}
+
+function formatLocalTime(iso: string): string {
+  const d = new Date(iso)
+  const hours = d.getHours()
+  const minutes = d.getMinutes().toString().padStart(2, "0")
+  const ampm = hours >= 12 ? "PM" : "AM"
+  const h12 = (hours % 12 || 12).toString().padStart(2, "0")
+  const day = d.getDate().toString().padStart(2, "0")
+  const month = (d.getMonth() + 1).toString().padStart(2, "0")
+  const year = d.getFullYear()
+  return `${h12}:${minutes} ${ampm}, ${day}/${month}/${year}`
 }
 
 export default function ResponsesPage() {
@@ -61,7 +76,7 @@ export default function ResponsesPage() {
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `responses-${form?.title?.replace(/\s+/g, '-').toLowerCase() || id}.csv`)
+      link.setAttribute('download', `responses-${form?.title?.replace(/\s+/g, '-').toLowerCase() || id}.xlsx`)
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -75,7 +90,7 @@ export default function ResponsesPage() {
       <div className="flex h-screen bg-slate-950 text-white overflow-hidden">
         <Sidebar />
         <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <ResponsesSkeleton />
           </div>
         </main>
@@ -84,67 +99,95 @@ export default function ResponsesPage() {
   }
   if (!form) return <div className="p-8 text-white">Form not found</div>
 
-  // Determine dynamic columns
-  const getDynamicValue = (res: FormResponse, qId: string) => {
-    const ans = res.answers.find(a => a.questionId === qId)
-    return ans ? ans.answerText : "-"
-  }
-
   return (
     <div className="flex h-screen bg-slate-950 text-white overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
               <ArrowLeft size={20} />
             </Button>
             <div className="flex-1">
               <h1 className="text-3xl font-bold">{form.title}</h1>
-              <p className="text-slate-500">Viewing {responses.length} responses</p>
+              <p className="text-slate-500">{responses.length} response{responses.length !== 1 ? "s" : ""}</p>
             </div>
+            <Button variant="outline" className="border-slate-700" onClick={() => router.push(`/forms/${id}`)}>
+              <Edit3 className="mr-2 h-4 w-4" /> Edit Form
+            </Button>
             <Button onClick={handleExport} className="bg-indigo-600 hover:bg-indigo-700">
-              <Download className="mr-2 h-4 w-4" /> Export CSV
+              <Download className="mr-2 h-4 w-4" /> Download Excel
             </Button>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
-            <Table>
-              <TableHeader className="bg-slate-950">
-                <TableRow className="border-slate-800 hover:bg-transparent">
-                  <TableHead className="w-[200px]">Submitted At</TableHead>
-                  {form.collectFullName && <TableHead>Name</TableHead>}
-                  {form.collectEmail && <TableHead>Email</TableHead>}
-                  {form.questions.map(q => (
-                    <TableHead key={q.questionId} className="min-w-[150px]">{q.questionText}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {responses.map((res) => (
-                  <TableRow key={res._id} className="border-slate-800 hover:bg-slate-800/50 transition-colors">
-                    <TableCell className="text-slate-400 font-mono text-xs">
-                      {format(new Date(res.submittedAt), 'MMM d, HH:mm')}
-                    </TableCell>
-                    {form.collectFullName && <TableCell className="font-medium">{res.respondentName || "-"}</TableCell>}
-                    {form.collectEmail && <TableCell>{res.respondentEmail || "-"}</TableCell>}
-                    {form.questions.map(q => (
-                      <TableCell key={q.questionId} className="text-slate-300">
-                        {getDynamicValue(res, q.questionId)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-                {responses.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={100} className="h-48 text-center text-slate-500">
-                      No responses yet.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          {responses.length === 0 ? (
+            <div className="text-center py-24 text-slate-500">
+              <p className="text-lg">No responses yet.</p>
+              <p className="text-sm mt-1">Share the form link to start collecting responses.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {responses.map((res) => (
+                <div key={res._id} className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 className="font-semibold text-indigo-400">Personal Information</h3>
+                    <span className="text-xs text-slate-500">{formatLocalTime(res.submittedAt)}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {form.collectFullName && (
+                      <div>
+                        <span className="text-slate-500">Full Name</span>
+                        <p className="text-white">{res.respondentName || "-"}</p>
+                      </div>
+                    )}
+                    {form.collectEmail && (
+                      <div>
+                        <span className="text-slate-500">Email</span>
+                        <p className="text-white">{res.respondentEmail || "-"}</p>
+                      </div>
+                    )}
+                    {form.collectPhone && (
+                      <div>
+                        <span className="text-slate-500">Phone</span>
+                        <p className="text-white">{res.respondentPhone || "-"}</p>
+                      </div>
+                    )}
+                    {form.collectAge && (
+                      <div>
+                        <span className="text-slate-500">Age</span>
+                        <p className="text-white">{res.respondentAge ?? "-"}</p>
+                      </div>
+                    )}
+                    {form.collectDateOfBirth && (
+                      <div>
+                        <span className="text-slate-500">Date of Birth</span>
+                        <p className="text-white">{res.respondentDOB ? new Date(res.respondentDOB).toLocaleDateString() : "-"}</p>
+                      </div>
+                    )}
+                    {form.collectGender && (
+                      <div>
+                        <span className="text-slate-500">Gender</span>
+                        <p className="text-white">{res.respondentGender || "-"}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-slate-800 pt-4 space-y-3">
+                    {form.questions.sort((a, b) => a.orderIndex - b.orderIndex).map((q) => {
+                      const ans = res.answers.find(a => a.questionId === q.questionId)
+                      return (
+                        <div key={q.questionId}>
+                          <span className="text-sm text-slate-500">{q.questionText}</span>
+                          <p className="text-white whitespace-pre-wrap">{ans?.answerText || "-"}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

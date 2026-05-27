@@ -2,7 +2,6 @@
 
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 import { User, Mail, Phone, Calendar, UserCircle, Hash } from "lucide-react"
 
 interface FieldSelectorProps {
@@ -26,7 +25,20 @@ const FIELDS = [
   { id: "collectGender", label: "Gender", icon: <UserCircle className="h-4 w-4" /> },
 ]
 
+const FIELD_IDS = FIELDS.map(f => f.id) as [string, ...string[]]
+
 export function FieldSelector({ config, onChange }: FieldSelectorProps) {
+  const handleToggle = (field: string) => {
+    onChange(field, !config[field as keyof typeof config])
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent, field: string) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      handleToggle(field)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -36,21 +48,26 @@ export function FieldSelector({ config, onChange }: FieldSelectorProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {FIELDS.map((field) => (
-          <Card 
-            key={field.id} 
-            className="flex items-center justify-between p-4 bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors"
+          <Card
+            key={field.id}
+            data-checked={config[field.id as keyof typeof config] || undefined}
+            className="flex items-center justify-between p-4 bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+            onClick={() => handleToggle(field.id)}
+            onKeyDown={(e) => handleKeyDown(e, field.id)}
+            tabIndex={0}
+            role="button"
+            aria-pressed={config[field.id as keyof typeof config]}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 pointer-events-none">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 border border-slate-800 text-indigo-400">
                 {field.icon}
               </div>
-              <Label htmlFor={field.id} className="font-medium cursor-pointer">{field.label}</Label>
+              <span className="font-medium text-sm">{field.label}</span>
             </div>
-            <Switch 
-              id={field.id} 
-              checked={(config as any)[field.id]} 
+            <Switch
+              checked={config[field.id as keyof typeof config]}
               onCheckedChange={(val: boolean) => onChange(field.id, val)}
-              className="data-checked:bg-indigo-600"
+              className="pointer-events-none"
             />
           </Card>
         ))}

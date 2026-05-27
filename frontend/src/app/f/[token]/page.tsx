@@ -155,10 +155,44 @@ export default function PublicFormPage() {
               {form.collectPhone && (
                 <div className="space-y-2">
                   <Label>Phone Number</Label>
-                  <Input 
-                    type="tel" 
-                    required 
+                  <Input
+                    type="tel"
+                    required
                     onChange={(e) => setPersonalInfo(p => ({...p, respondentPhone: e.target.value}))}
+                    className="bg-slate-950 border-slate-800"
+                  />
+                </div>
+              )}
+              {form.collectAge && (
+                <div className="space-y-2">
+                  <Label>Age</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="150"
+                    required
+                    onChange={(e) => setPersonalInfo(p => ({...p, respondentAge: Number(e.target.value)}))}
+                    className="bg-slate-950 border-slate-800"
+                  />
+                </div>
+              )}
+              {form.collectDateOfBirth && (
+                <div className="space-y-2">
+                  <Label>Date of Birth</Label>
+                  <Input
+                    type="date"
+                    required
+                    onChange={(e) => setPersonalInfo(p => ({...p, respondentDOB: e.target.value}))}
+                    className="bg-slate-950 border-slate-800"
+                  />
+                </div>
+              )}
+              {form.collectGender && (
+                <div className="space-y-2">
+                  <Label>Gender</Label>
+                  <Input
+                    required
+                    onChange={(e) => setPersonalInfo(p => ({...p, respondentGender: e.target.value}))}
                     className="bg-slate-950 border-slate-800"
                   />
                 </div>
