@@ -1,13 +1,10 @@
 # FormAI
 
 <div align="center">
-  <video src="https://github.com/GitGuru-sudo/Form_AI/raw/main/demo.mp4" controls muted width="720">
-    Your browser can't play this video inline —
-    <a href="https://github.com/GitGuru-sudo/Form_AI/raw/main/demo.mp4">watch the demo here</a>.
-  </video>
-</div>
 
-> ▶️ **Demo:** if the player above doesn't show, [watch/download the demo here](https://github.com/GitGuru-sudo/Form_AI/raw/main/demo.mp4).
+https://github.com/user-attachments/assets/da4d5aaf-0167-4945-a44a-050a95d3c029
+
+</div>
 
 **Hugging Face model repo: [saksham0510/formai-tinyllama](https://huggingface.co/saksham0510/formai-tinyllama)**
 
