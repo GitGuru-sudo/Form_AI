@@ -21,7 +21,10 @@ export interface IResponse extends Document {
 const AnswerSchema = new Schema({
   questionId: { type: String, required: true },
   questionText: { type: String, required: true },
-  answerText: { type: String, required: true }
+  // NOT required: a respondent may legitimately leave an optional question blank.
+  // Mongoose treats "" as failing `required`, which previously made the whole
+  // response (including personal info) fail to save with a 500.
+  answerText: { type: String, default: '' }
 });
 
 const ResponseSchema: Schema = new Schema({
@@ -35,5 +38,9 @@ const ResponseSchema: Schema = new Schema({
   answers: [AnswerSchema],
   submittedAt: { type: Date, default: Date.now }
 });
+
+// Responses are always queried/sorted by form + recency (getResponses, export,
+// and the dashboard aggregate). This compound index serves all of them.
+ResponseSchema.index({ formId: 1, submittedAt: -1 });
 
 export default mongoose.model<IResponse>('Response', ResponseSchema);

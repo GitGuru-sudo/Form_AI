@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Form } from "@/types"
-import { MessageSquare, Share2, Edit2, Play, Square, Trash2 } from "lucide-react"
+import { MessageSquare, Edit2, Play, Square, Trash2, Copy } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
 
@@ -13,9 +13,10 @@ interface FormCardProps {
   responseCount: number
   onToggle: (id: string) => void
   onDelete: (id: string) => void
+  onDuplicate: (id: string) => void
 }
 
-export function FormCard({ form, responseCount, onToggle, onDelete }: FormCardProps) {
+export function FormCard({ form, responseCount, onToggle, onDelete, onDuplicate }: FormCardProps) {
   return (
     <Card className="group overflow-hidden bg-slate-900 border-slate-800 hover:border-slate-700 transition-all shadow-xl hover:shadow-indigo-500/10">
       <div className="p-6">
@@ -25,12 +26,15 @@ export function FormCard({ form, responseCount, onToggle, onDelete }: FormCardPr
           </Badge>
           <div className="flex gap-2">
             <Link href={`/forms/${form._id}`}>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
-                <Edit2 size={16} />
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" aria-label="Edit form">
+                <Edit2 size={16} aria-hidden="true" />
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-400" onClick={() => onDelete(form._id!)}>
-              <Trash2 size={16} />
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-400" onClick={() => onDuplicate(form._id!)} aria-label="Duplicate form">
+              <Copy size={16} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-400" onClick={() => onDelete(form._id!)} aria-label="Delete form">
+              <Trash2 size={16} aria-hidden="true" />
             </Button>
           </div>
         </div>

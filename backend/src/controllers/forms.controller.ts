@@ -67,10 +67,50 @@ export const createForm = async (req: Request, res: Response) => {
   }
 };
 
+export const duplicateForm = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const clerkUserId = req.clerkUserId;
+
+    if (!clerkUserId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const source = await Form.findOne({ _id: id, clerkUserId }).lean();
+    if (!source) {
+      return res.status(404).json({ message: 'Form not found' });
+    }
+
+    const {
+      _id: _omitId,
+      shareToken: _omitToken,
+      createdAt: _omitCreated,
+      updatedAt: _omitUpdated,
+      __v: _omitV,
+      ...rest
+    } = source as any;
+
+    const copy = new Form({
+      ...rest,
+      clerkUserId,
+      title: `${source.title} (Copy)`,
+      shareToken: uuidv4().substring(0, 8),
+      isActive: source.isActive,
+    });
+
+    await copy.save();
+    logger.info('Form duplicated', { sourceId: id, newId: copy._id });
+    res.status(201).json(copy);
+  } catch (err: any) {
+    logger.error('Failed to duplicate form', { error: err.message });
+    res.status(500).json({ message: err.message });
+  }
+};
+
 export const getForms = async (req: Request, res: Response) => {
   try {
     const clerkUserId = req.clerkUserId;
-    const forms = await Form.find({ clerkUserId }).sort({ createdAt: -1 });
+    const forms = await Form.find({ clerkUserId }).sort({ createdAt: -1 }).lean();
 
     const formIds = forms.map(f => f._id);
     const responseCounts = await ResponseModel.aggregate([
@@ -81,7 +121,7 @@ export const getForms = async (req: Request, res: Response) => {
     const countMap = new Map(responseCounts.map(r => [r._id.toString(), r.count]));
 
     const formsWithCounts = forms.map(form => ({
-      ...form.toObject(),
+      ...form,
       responseCount: countMap.get(form._id.toString()) || 0
     }));
 
@@ -96,7 +136,7 @@ export const getFormById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const clerkUserId = req.clerkUserId;
-    const form = await Form.findOne({ _id: id, clerkUserId });
+    const form = await Form.findOne({ _id: id, clerkUserId }).lean();
 
     if (!form) {
       return res.status(404).json({ message: 'Form not found' });

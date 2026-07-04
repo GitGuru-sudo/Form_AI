@@ -8,6 +8,7 @@ import { ChatMessage as MessageType } from "@/types"
 import { useRouter } from "next/navigation"
 import api from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
+import { QUICK_PROMPTS } from "@/lib/prompts"
 
 type ChatState = "initial" | "waiting_for_count" | "generating"
 const GENERATE_TIMEOUT_MS = 105000
@@ -15,15 +16,15 @@ const GENERATE_TIMEOUT_MS = 105000
 function parseQuestionCount(input: string): number | null {
   const trimmed = input.trim().toLowerCase();
   
-  if (trimmed === "" || trimmed === "default" || trimmed === "skip" || trimmed === "10") {
-    return 10;
+  if (trimmed === "" || trimmed === "default" || trimmed === "skip" || trimmed === "5") {
+    return 5;
   }
-  
+
   const num = parseInt(input.trim(), 10);
-  if (!isNaN(num) && num >= 1 && num <= 50) {
+  if (!isNaN(num) && num >= 1 && num <= 10) {
     return num;
   }
-  
+
   return null;
 }
 
@@ -82,7 +83,7 @@ export default function CreateFormPage() {
         const aiMessage: MessageType = {
           id: (Date.now() + 1).toString(),
           role: "ai",
-          content: "Got it! How many questions would you like in your form? You can reply with a number (1-50) or just press enter for the default of 10 questions."
+          content: "Got it! How many questions would you like in your form? You can reply with a number (1-10) or just press enter for the default of 5 questions."
         };
         setMessages(prev => [...prev, aiMessage]);
         setChatState("waiting_for_count");
@@ -99,7 +100,7 @@ export default function CreateFormPage() {
           const aiMessage: MessageType = {
             id: (Date.now() + 1).toString(),
             role: "ai",
-            content: "Please enter a valid number between 1 and 50. For example: '10' or just press enter for the default of 10 questions."
+            content: "Please enter a valid number between 1 and 10. For example: '5' or just press enter for the default of 5 questions."
           };
           setMessages(prev => [...prev, aiMessage]);
           setIsTyping(false);
@@ -118,44 +119,25 @@ export default function CreateFormPage() {
         
         abortControllerRef.current = new AbortController()
         let didTimeout = false
-        const requestStartedAt = Date.now()
         const timeoutId = window.setTimeout(() => {
           didTimeout = true
           abortControllerRef.current?.abort()
         }, GENERATE_TIMEOUT_MS)
-        
+
         try {
           const token = await getToken();
-          console.info("[FormAI] Token acquired", {
-            durationMs: Date.now() - requestStartedAt,
-            hasToken: Boolean(token)
-          });
 
-          const res = await api.post("/api/ml/generate", { 
-            prompt: pendingPrompt, 
-            questionCount: count 
+          const res = await api.post("/api/ml/generate", {
+            prompt: pendingPrompt,
+            questionCount: count
           }, {
             headers: { Authorization: `Bearer ${token}` },
             signal: abortControllerRef.current.signal
           });
 
-          console.info("[FormAI] Generate request completed", {
-            durationMs: Date.now() - requestStartedAt,
-            status: res.status,
-            questionCount: res.data?.questions?.length
-          });
-          
           localStorage.setItem("generatedForm", JSON.stringify(res.data));
           router.push("/create/preview");
         } catch (err: any) {
-          console.error("[FormAI] Generate request failed", {
-            durationMs: Date.now() - requestStartedAt,
-            didTimeout,
-            name: err.name,
-            status: err.response?.status,
-            message: err.message
-          });
-
           if (err.name === 'CanceledError' || err.name === 'AbortError') {
             if (didTimeout) {
               setMessages(prev => prev.filter(m => m.id !== aiMessage.id).concat([{
@@ -205,7 +187,14 @@ export default function CreateFormPage() {
             <div ref={messagesEndRef} />
           </div>
         </div>
-        <ChatInput onSend={handleSend} disabled={isTyping || isBuilding} isBuilding={isBuilding} onStop={handleStop} />
+        <ChatInput
+          onSend={handleSend}
+          disabled={isTyping || isBuilding}
+          isBuilding={isBuilding}
+          onStop={handleStop}
+          quickPrompts={QUICK_PROMPTS}
+          showQuickPrompts={chatState === "initial"}
+        />
       </main>
     </div>
   )

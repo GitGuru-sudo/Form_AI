@@ -1,5 +1,13 @@
 # FormAI
 
+<div align="center">
+
+https://github.com/GitGuru-sudo/Form_AI/raw/main/demo.mp4
+
+</div>
+
+> ▶️ **Demo:** if the video above doesn't play inline, [watch/download it here](https://github.com/GitGuru-sudo/Form_AI/raw/main/demo.mp4).
+
 **Hugging Face model repo: [saksham0510/formai-tinyllama](https://huggingface.co/saksham0510/formai-tinyllama)**
 
 **FormAI was built to reduce the complexity of creating forms in tools like Google Forms and Microsoft Forms. Instead of building everything manually, you can describe the form in a prompt, generate the structure, and then edit the rest easily.**

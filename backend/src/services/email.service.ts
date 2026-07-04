@@ -28,3 +28,34 @@ export const sendFormInvite = async (toEmails: string[], formTitle: string, form
     console.error('Failed to send email:', err);
   }
 };
+
+export const sendNewResponseNotification = async (
+  toEmail: string,
+  formTitle: string,
+  formId: string
+) => {
+  if (!resend) {
+    console.warn('Resend API Key is missing. Notification skipped.');
+    return;
+  }
+  if (!toEmail) return;
+
+  const dashboardBase = process.env.APP_BASE_URL || 'http://localhost:3000';
+  const link = `${dashboardBase}/forms/${formId}/responses`;
+
+  try {
+    await resend.emails.send({
+      from: 'FormAI <onboarding@resend.dev>',
+      to: [toEmail],
+      subject: `New response: ${formTitle}`,
+      html: `
+        <h1>You've got a new response</h1>
+        <p>Your form <strong>${formTitle}</strong> just received a new submission.</p>
+        <p><a href="${link}">View responses</a></p>
+        <p style="color:#64748b;font-size:12px">Built with FormAI</p>
+      `
+    });
+  } catch (err) {
+    console.error('Failed to send notification email:', err);
+  }
+};

@@ -25,8 +25,6 @@ const FIELDS = [
   { id: "collectGender", label: "Gender", icon: <UserCircle className="h-4 w-4" /> },
 ]
 
-const FIELD_IDS = FIELDS.map(f => f.id) as [string, ...string[]]
-
 export function FieldSelector({ config, onChange }: FieldSelectorProps) {
   const handleToggle = (field: string) => {
     onChange(field, !config[field as keyof typeof config])

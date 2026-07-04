@@ -39,6 +39,10 @@ export const connectDB = async () => {
       await mongoose.connect(MONGODB_URL, {
         serverSelectionTimeoutMS: 10000,
         socketTimeoutMS: 45000,
+        // Reuse a warm pool of connections instead of opening one per request —
+        // avoids handshake latency under concurrent load.
+        maxPoolSize: 20,
+        minPoolSize: 2,
       });
       logger.info('MongoDB connected');
       return;

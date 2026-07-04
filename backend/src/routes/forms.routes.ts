@@ -5,6 +5,7 @@ import * as formsController from '../controllers/forms.controller';
 const router = Router();
 
 router.post('/', requireAuth, formsController.createForm);
+router.post('/:id/duplicate', requireAuth, formsController.duplicateForm);
 router.get('/', requireAuth, formsController.getForms);
 router.get('/:id', requireAuth, formsController.getFormById);
 router.patch('/:id', requireAuth, formsController.updateForm);

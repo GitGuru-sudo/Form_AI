@@ -11,3 +11,16 @@ graphify-out/
 .github/workflows/
 .github/workflow/
 frontend/.git_backup/
+
+# Local-only — kept on disk, never pushed
+deployment.md
+
+# Too large for GitHub (>100MB); demo.mp4 is the one used in the README
+Video.mp4
+
+# Editor/IDE config
+.continue/
+
+# Python bytecode cache
+__pycache__/
+*.pyc

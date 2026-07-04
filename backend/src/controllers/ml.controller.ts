@@ -11,11 +11,11 @@ export const generateForm = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Prompt is required' });
     }
 
-    let count = 10;
+    let count = 5;
     if (questionCount !== undefined && questionCount !== null) {
       const parsed = parseInt(questionCount, 10);
-      if (isNaN(parsed) || parsed < 1 || parsed > 50) {
-        return res.status(400).json({ message: 'questionCount must be a positive integer between 1 and 50' });
+      if (isNaN(parsed) || parsed < 1 || parsed > 10) {
+        return res.status(400).json({ message: 'questionCount must be a positive integer between 1 and 10' });
       }
       count = parsed;
     }

@@ -14,6 +14,16 @@ export type QuestionType =
   | "yes_no"
   | "file_upload";
 
+export interface QuestionValidation {
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  pattern?: string;
+  patternMessage?: string;
+  format?: "email" | "phone";
+}
+
 export interface Question {
   questionId: string;
   questionText: string;
@@ -21,6 +31,14 @@ export interface Question {
   options?: string[];
   isRequired: boolean;
   orderIndex: number;
+  validation?: QuestionValidation;
+}
+
+export interface FormTheme {
+  accent?: string;
+  coverImageUrl?: string;
+  logoUrl?: string;
+  mode?: "light" | "dark";
 }
 
 export interface Form {
@@ -36,7 +54,10 @@ export interface Form {
   collectAge: boolean;
   collectDateOfBirth: boolean;
   collectGender: boolean;
+  notifyOnResponse?: boolean;
+  notifyEmail?: string;
   questions: Question[];
+  theme?: FormTheme;
   responseCount?: number;
   createdAt?: string;
   updatedAt?: string;

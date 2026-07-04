@@ -108,7 +108,7 @@ function getCategory(prompt: string): string {
   return 'contact';
 }
 
-function createFallback(prompt: string, questionCount: number = 10) {
+function createFallback(prompt: string, questionCount: number = 5) {
   const category = getCategory(prompt);
   const templates = QUESTION_TEMPLATES[category as keyof typeof QUESTION_TEMPLATES] || QUESTION_TEMPLATES.contact;
   
@@ -227,7 +227,7 @@ function parseGeneratedForm(payload: any) {
   return null;
 }
 
-export const generateForm = async (prompt: string, questionCount: number = 10) => {
+export const generateForm = async (prompt: string, questionCount: number = 5) => {
   const startedAt = Date.now();
   const resolvedEndpoint = resolveHuggingFaceEndpoint(HUGGINGFACE_API_URL);
 
@@ -304,6 +304,6 @@ export const generateForm = async (prompt: string, questionCount: number = 10) =
   }
 };
 
-export const ruleBasedFallback = (prompt: string, questionCount: number = 10) => {
+export const ruleBasedFallback = (prompt: string, questionCount: number = 5) => {
   return createFallback(prompt, questionCount);
 };

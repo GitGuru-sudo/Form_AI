@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Trash2, GripVertical, Plus } from "lucide-react"
-import { Question, QuestionType } from "@/types"
+import { Trash2, GripVertical, Plus, SlidersHorizontal, ChevronDown } from "lucide-react"
+import { Question, QuestionType, QuestionValidation } from "@/types"
+import { useState } from "react"
 
 interface QuestionCardProps {
   question: Question
@@ -33,11 +34,30 @@ const QUESTION_TYPES: { value: QuestionType, label: string }[] = [
 ]
 
 export function QuestionCard({ question, onUpdate, onDelete }: QuestionCardProps) {
+  const [showValidation, setShowValidation] = useState(false)
+
   const handleTypeChange = (value: string | null) => {
     if (value) {
       onUpdate(question.questionId, { questionType: value as QuestionType })
     }
   }
+
+  const updateValidation = (patch: Partial<QuestionValidation>) => {
+    const next: QuestionValidation = { ...(question.validation || {}), ...patch }
+    for (const key of Object.keys(next) as (keyof QuestionValidation)[]) {
+      const val = next[key]
+      if (val === "" || val === undefined || (typeof val === "number" && Number.isNaN(val))) {
+        delete next[key]
+      }
+    }
+    onUpdate(question.questionId, { validation: Object.keys(next).length ? next : undefined })
+  }
+
+  const numFromInput = (raw: string): number | undefined =>
+    raw === "" ? undefined : Number(raw)
+
+  const isTextType = ["short_answer", "long_answer"].includes(question.questionType)
+  const isNumberType = question.questionType === "number"
 
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...(question.options || [])]
@@ -95,8 +115,8 @@ export function QuestionCard({ question, onUpdate, onDelete }: QuestionCardProps
                   onChange={(e) => handleOptionChange(idx, e.target.value)}
                   className="bg-transparent border-b border-t-0 border-r-0 border-l-0 border-slate-800 focus-visible:ring-0 rounded-none h-8 px-0"
                 />
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-red-400" onClick={() => removeOption(idx)}>
-                  <Trash2 size={14} />
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-red-400" onClick={() => removeOption(idx)} aria-label="Remove option">
+                  <Trash2 size={14} aria-hidden="true" />
                 </Button>
               </div>
             ))}
@@ -107,9 +127,96 @@ export function QuestionCard({ question, onUpdate, onDelete }: QuestionCardProps
           </div>
         )}
 
+        {/* Collapsible validation rules */}
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setShowValidation((s) => !s)}
+            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            <SlidersHorizontal size={13} />
+            Validation
+            <ChevronDown
+              size={14}
+              className={`transition-transform ${showValidation ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {showValidation && (
+            <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+              {isTextType && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">Min length</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={question.validation?.minLength ?? ""}
+                      onChange={(e) => updateValidation({ minLength: numFromInput(e.target.value) })}
+                      className="h-8 bg-slate-950 border-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">Max length</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={question.validation?.maxLength ?? ""}
+                      onChange={(e) => updateValidation({ maxLength: numFromInput(e.target.value) })}
+                      className="h-8 bg-slate-950 border-slate-800"
+                    />
+                  </div>
+                </>
+              )}
+
+              {isNumberType && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">Min value</Label>
+                    <Input
+                      type="number"
+                      value={question.validation?.min ?? ""}
+                      onChange={(e) => updateValidation({ min: numFromInput(e.target.value) })}
+                      className="h-8 bg-slate-950 border-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">Max value</Label>
+                    <Input
+                      type="number"
+                      value={question.validation?.max ?? ""}
+                      onChange={(e) => updateValidation({ max: numFromInput(e.target.value) })}
+                      className="h-8 bg-slate-950 border-slate-800"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="col-span-2 space-y-1">
+                <Label className="text-xs text-slate-500">Regex pattern (optional)</Label>
+                <Input
+                  value={question.validation?.pattern ?? ""}
+                  onChange={(e) => updateValidation({ pattern: e.target.value })}
+                  placeholder="e.g. ^[A-Z]{2}\\d{4}$"
+                  className="h-8 bg-slate-950 border-slate-800 font-mono text-sm"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label className="text-xs text-slate-500">Custom error message (optional)</Label>
+                <Input
+                  value={question.validation?.patternMessage ?? ""}
+                  onChange={(e) => updateValidation({ patternMessage: e.target.value })}
+                  placeholder="Shown when the pattern doesn't match"
+                  className="h-8 bg-slate-950 border-slate-800"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-800/50">
-          <Button variant="ghost" size="icon" className="text-slate-600 hover:text-red-400" onClick={() => onDelete(question.questionId)}>
-            <Trash2 size={18} />
+          <Button variant="ghost" size="icon" className="text-slate-600 hover:text-red-400" onClick={() => onDelete(question.questionId)} aria-label="Delete question">
+            <Trash2 size={18} aria-hidden="true" />
           </Button>
           <div className="flex items-center space-x-2">
             <Label htmlFor={`required-${question.questionId}`} className="text-slate-400 text-sm">Required</Label>

@@ -8,17 +8,18 @@ import { ChatMessage as MessageType } from "@/types"
 import { useRouter } from "next/navigation"
 import api from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
+import { QUICK_PROMPTS } from "@/lib/prompts"
 
 type ChatState = "initial" | "waiting_for_count" | "generating"
 const GENERATE_TIMEOUT_MS = 105000
 
 function parseQuestionCount(input: string): number | null {
   const trimmed = input.trim().toLowerCase();
-  if (trimmed === "" || trimmed === "default" || trimmed === "skip" || trimmed === "10") {
-    return 10;
+  if (trimmed === "" || trimmed === "default" || trimmed === "skip" || trimmed === "5") {
+    return 5;
   }
   const num = parseInt(input.trim(), 10);
-  if (!isNaN(num) && num >= 1 && num <= 50) {
+  if (!isNaN(num) && num >= 1 && num <= 10) {
     return num;
   }
   return null;
@@ -80,7 +81,7 @@ export default function DashboardPage() {
         const aiMessage: MessageType = {
           id: (Date.now() + 1).toString(),
           role: "ai",
-          content: "Got it! How many questions would you like? (1-50, or press Enter for 10)"
+          content: "Got it! How many questions would you like? (1-10, or press Enter for 5)"
         };
         setMessages(prev => [...prev, aiMessage]);
         setChatState("waiting_for_count");
@@ -97,7 +98,7 @@ export default function DashboardPage() {
           const aiMessage: MessageType = {
             id: (Date.now() + 1).toString(),
             role: "ai",
-            content: "Please enter a number between 1-50, or press Enter for the default of 10."
+            content: "Please enter a number between 1-10, or press Enter for the default of 5."
           };
           setMessages(prev => [...prev, aiMessage]);
           setIsTyping(false);
@@ -116,44 +117,25 @@ export default function DashboardPage() {
         
         abortControllerRef.current = new AbortController()
         let didTimeout = false
-        const requestStartedAt = Date.now()
         const timeoutId = window.setTimeout(() => {
           didTimeout = true
           abortControllerRef.current?.abort()
         }, GENERATE_TIMEOUT_MS)
-        
+
         try {
           const token = await getToken()
-          console.info("[FormAI] Token acquired", {
-            durationMs: Date.now() - requestStartedAt,
-            hasToken: Boolean(token)
-          })
 
-          const res = await api.post("/api/ml/generate", { 
-            prompt: pendingPrompt, 
-            questionCount: count 
+          const res = await api.post("/api/ml/generate", {
+            prompt: pendingPrompt,
+            questionCount: count
           }, {
             headers: { Authorization: `Bearer ${token}` },
             signal: abortControllerRef.current.signal
           })
 
-          console.info("[FormAI] Generate request completed", {
-            durationMs: Date.now() - requestStartedAt,
-            status: res.status,
-            questionCount: res.data?.questions?.length
-          })
-          
           localStorage.setItem("generatedForm", JSON.stringify(res.data))
           router.push("/create/preview")
         } catch (err: any) {
-          console.error("[FormAI] Generate request failed", {
-            durationMs: Date.now() - requestStartedAt,
-            didTimeout,
-            name: err.name,
-            status: err.response?.status,
-            message: err.message
-          })
-
           if (err.name === 'CanceledError' || err.name === 'AbortError') {
             if (didTimeout) {
               setMessages(prev => prev.filter(m => m.id !== aiMessage.id).concat([{
@@ -184,12 +166,12 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen bg-slate-950 text-white overflow-hidden">
       <Sidebar />
-      <main className="flex-1 flex flex-col">
+      <main id="main-content" className="flex-1 flex flex-col">
         <div className="flex-1 overflow-y-auto scrollbar-hide py-8 px-4">
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-8 mt-4">
               <h1 className="text-4xl font-bold mb-2">AI Form Builder</h1>
-              <p className="text-slate-500">Describe your form, and I'll create it instantly</p>
+              <p className="text-slate-400">Describe your form, and I&apos;ll create it instantly</p>
             </div>
             
             <div className="space-y-4">
@@ -213,11 +195,13 @@ export default function DashboardPage() {
         
         <div className="pb-8 px-4">
           <div className="max-w-2xl mx-auto">
-            <ChatInput 
-              onSend={handleSend} 
-              disabled={isBuilding} 
+            <ChatInput
+              onSend={handleSend}
+              disabled={isBuilding}
               isBuilding={isBuilding}
               onStop={handleStop}
+              quickPrompts={QUICK_PROMPTS}
+              showQuickPrompts={chatState === "initial"}
             />
           </div>
         </div>
